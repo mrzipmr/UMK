@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Иерархический редактор</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Панель инструментов -->
+        <nav class="panel">
+            <h3>Инструменты</h3>
+            <button class="panel-btn" data-type="level">Создать Level</button>
+            <p class="panel-info">Все остальные блоки создаются внутри уже существующих с помощью кнопок "+".</p>
+            
+            <hr>
+            <h3>Проект</h3>
+            <button id="export-btn" class="panel-btn secondary">Export as .zip</button>
+            <button id="import-btn" class="panel-btn secondary">Import from .zip</button>
+            <input type="file" id="import-zip-input" accept=".zip" style="display: none;">
+        </nav>
+
+        <!-- Область для блоков -->
+        <main id="content-area" class="content-area">
+            <div class="placeholder">
+                <h2>Начните работу</h2>
+                <p>Нажмите "Создать Level" на панели слева.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модальное окно -->
+    <div id="dialogue-modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-title">Создание диалогового блока</h2>
+            <div id="modal-editable-area" class="editable-content" contenteditable="true"></div>
+            
+            <div class="voice-recorder">
+                <button id="record-btn">Записать голос</button>
+                <span id="record-status"></span>
+                <div id="audio-preview-container"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="cancel-dialogue-btn">Отмена</button>
+                <button id="save-dialogue-btn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключаем библиотеку JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
