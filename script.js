@@ -1,6 +1,5 @@
-// ПОЛНАЯ ФИНАЛЬНАЯ ВЕРСИЯ С СОХРАНЕНИЕМ, ЭКСПОРТОМ И ИМПОРТОМ
+// ПОЛНАЯ И ИСПРАВЛЕННАЯ ВЕРСИЯ
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ИНИЦИАЛИЗАЦИЯ ---
     const panel = document.querySelector('.panel');
     const contentArea = document.getElementById('content-area');
     const exportBtn = document.getElementById('export-btn');
@@ -25,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let userAudioStream = null;
     let selectedCells = [], isSelecting = false, currentTable = null;
 
-    // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
     panel.addEventListener('click', (event) => {
         if (event.target.matches('.panel-btn[data-type="level"]')) {
             selectedElement = null;
@@ -58,8 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
     contentArea.addEventListener('mouseover', (event) => { if (!isSelecting) return; event.preventDefault(); const cell = event.target.closest('td'); if (cell && cell.closest('.custom-table') === currentTable) { toggleCellSelection(cell); } });
     document.addEventListener('mouseup', () => { isSelecting = false; });
     
-    // --- ФУНКЦИИ СОХРАНЕНИЯ, ЗАГРУЗКИ И УДАЛЕНИЯ ---
-    
     async function saveState() {
         const structure = serializeDOM(contentArea);
         const structureWithMedia = await processMediaForSaving(structure);
@@ -87,9 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function deleteBlock(blockToDelete) {
         if (!blockToDelete) return;
         if (confirm('Вы уверены, что хотите удалить этот блок и все его содержимое?')) {
-            if (blockToDelete === selectedElement) {
-                selectedElement = null;
-            }
+            if (blockToDelete === selectedElement) { selectedElement = null; }
             blockToDelete.remove();
             saveState();
         }
@@ -174,7 +168,37 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
     }
 
-    function formatContent(block) { const editableArea = block.querySelector('.editable-content'); if (!editableArea) return; const isDialogue = block.dataset.blockType === 'dialogue'; let html = editableArea.innerHTML; html = html.replace(/<p>|<\/p>|<div>|<\/div>/gi, '\n'); html = html.replace(/<br\s*\/?>/gi, '\n'); const tempDiv = document.createElement('div'); tempDiv.innerHTML = html; const text = tempDiv.textContent || tempDiv.innerText || ''; const lines = text.split('\n').filter(line => line.trim() !== ''); const colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6']; const characterColorMap = new Map(); if (isDialogue) { Array.from(new Set(lines.map(line => (line.match(/^([^:]+):/)?.[1] || '').trim()).filter(Boolean))).forEach((char, index) => characterColorMap.set(char, colors[index % colors.length])); } const existingElements = Array.from(editableArea.children).filter(el => el.matches('img, audio, .table-container')); const newTextHTML = lines.map(line => { const match = line.match(/^([^:]+):(.*)/); const characterName = match ? match[1].trim() : null; if (isDialogue && characterName && characterColorMap.has(characterName)) { return `<p><strong style="color: ${characterColorMap.get(characterName)};">${characterName}:</strong>${match[2] || ''}</p>`; } return `<p>${line}</p>`; }).join(''); editableArea.innerHTML = newTextHTML; existingElements.forEach(el => editableArea.prepend(el)); editableArea.querySelectorAll('img').forEach(img => img.classList.add('resized-image')); saveState(); }
+    function formatContent(block) { 
+        const editableArea = block.querySelector('.editable-content'); 
+        if (!editableArea) return; 
+        const isDialogue = block.dataset.blockType === 'dialogue'; 
+        
+        // --- КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Используем querySelectorAll для надежного поиска медиа-элементов ---
+        const existingElements = Array.from(editableArea.querySelectorAll('img, audio, .table-container'));
+
+        let html = editableArea.innerHTML; 
+        html = html.replace(/<p>|<\/p>|<div>|<\/div>/gi, '\n'); 
+        html = html.replace(/<br\s*\/?>/gi, '\n'); 
+        const tempDiv = document.createElement('div'); 
+        tempDiv.innerHTML = html; 
+        const text = tempDiv.textContent || tempDiv.innerText || ''; 
+        const lines = text.split('\n').filter(line => line.trim() !== ''); 
+        const colors = ['#e74c3c', '#2ecc71', '#3498db', '#9b59b6']; 
+        const characterColorMap = new Map(); 
+        if (isDialogue) { Array.from(new Set(lines.map(line => (line.match(/^([^:]+):/)?.[1] || '').trim()).filter(Boolean))).forEach((char, index) => characterColorMap.set(char, colors[index % colors.length])); } 
+        
+        const newTextHTML = lines.map(line => { 
+            const match = line.match(/^([^:]+):(.*)/); 
+            const characterName = match ? match[1].trim() : null; 
+            if (isDialogue && characterName && characterColorMap.has(characterName)) { return `<p><strong style="color: ${characterColorMap.get(characterName)};">${characterName}:</strong>${match[2] || ''}</p>`; } 
+            return `<p>${line}</p>`; 
+        }).join(''); 
+        
+        editableArea.innerHTML = newTextHTML; 
+        existingElements.forEach(el => editableArea.prepend(el)); 
+        editableArea.querySelectorAll('img').forEach(img => img.classList.add('resized-image')); 
+        saveState(); 
+    }
     
     function openContentModal(type) {
         currentModalType = type;
@@ -266,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
-    // --- ФУНКЦИИ ДЛЯ СЕРИАЛИЗАЦИИ, ЭКСПОРТА И ИМПОРТА ---
     function serializeDOM(rootElement) {
         const children = [...rootElement.querySelectorAll(':scope > .block, :scope > .dialogue-wrapper')];
         return children.map(child => {
@@ -277,9 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 children: []
             };
             const contentContainer = child.querySelector(':scope > .block-content');
-            if (contentContainer) {
-                data.children = serializeDOM(contentContainer);
-            }
+            if (contentContainer) { data.children = serializeDOM(contentContainer); }
             return data;
         });
     }
@@ -303,9 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 block.content = tempDiv.innerHTML;
             }
-            if (block.children.length > 0) {
-                await processMediaForSaving(block.children);
-            }
+            if (block.children.length > 0) { await processMediaForSaving(block.children); }
         }
         return structure;
     }
@@ -321,17 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const isEditable = ['grammar', 'info', 'dialogue'].includes(data.type);
             if (isContainer) contentHTML = `<div class="block-content"></div>`;
             else if (isEditable) contentHTML = `<div class="editable-content" contenteditable="true">${data.content || ''}</div>`;
-            
             let buttonsHTML = `<button class="delete-btn" title="Удалить блок">×</button>`;
-            if(data.type === 'dialogue' || data.type === 'info') {
-                buttonsHTML += `<button class="edit-dialogue-btn" title="Редактировать">✎</button>`;
-            }
-            
+            if(data.type === 'dialogue' || data.type === 'info') { buttonsHTML += `<button class="edit-dialogue-btn" title="Редактировать">✎</button>`; }
             if(data.type === 'dialogue') block.innerHTML = `${buttonsHTML}${contentHTML}`;
             else block.innerHTML = `${buttonsHTML}${headerHTML}${contentHTML}`;
-            
             parentElement.appendChild(block);
-
             if (data.children && data.children.length > 0) {
                 buildDOMFromStructure(data.children, block.querySelector(':scope > .block-content'));
             }
